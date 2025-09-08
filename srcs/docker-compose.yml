@@ -1,0 +1,112 @@
+version: "3.8"
+
+services:
+  nginx:
+    build: requirements/nginx/.
+    container_name: nginx
+    restart: always
+    depends_on:
+      - wordpress
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress:/var/www/html
+    networks:
+      - inception
+    env_file:
+      - .env
+
+  wordpress:
+    build: requirements/wordpress/.
+    container_name: wordpress
+    restart: always
+    depends_on:
+      - mariadb
+      - redis
+    volumes:
+      - wordpress:/var/www/html
+    networks:
+      - inception
+    env_file:
+      - .env
+
+  mariadb:
+    build: requirements/mariadb/.
+    container_name: mariadb
+    restart: always
+    volumes:
+      - mariadb:/var/lib/mysql
+    networks:
+      - inception
+    env_file:
+      - .env
+
+  redis:
+    build: requirements/bonus/redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: always
+    networks:
+      - inception
+
+  adminer:
+    build: requirements/bonus/adminer
+    container_name: adminer
+    restart: always
+    networks:
+      - inception
+    depends_on:
+      - mariadb
+
+  static_site:
+    build: requirements/bonus/static_site
+    container_name: static_site
+    restart: always
+    networks:
+      - inception
+
+  ftp:
+    build: requirements/bonus/ftp
+    container_name: ftp
+    ports:
+      - "21:21"
+      - "21100-21110:21100-21110"
+    volumes:
+      - wordpress:/var/www/html
+    networks:
+      - inception
+    restart: always
+    env_file:
+      - .env
+
+  portainer:
+    build: requirements/bonus/portainer
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - inception
+
+
+volumes:
+  wordpress:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/akaddour/data/wordpress
+      o: bind
+  mariadb:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/akaddour/data/mariadb
+      o: bind
+  portainer_data:
+    driver: local
+
+networks:
+  inception:
+    driver: bridge
